@@ -17,14 +17,4 @@ public class Data {
     public static JLabel timeLabel;
     public static int seconds = 0;
     public static int minutes = 0;
-
-
-
-    /*public void setFileInputStream(File myFile) throws FileNotFoundException {
-        fileInputStream = new FileInputStream(myFile);
-    }
-    public void setBufferedInputStream(FileInputStream fileInputStream){
-        bufferedInputStream = new BufferedInputStream(fileInputStream);
-    }*/
-
 }

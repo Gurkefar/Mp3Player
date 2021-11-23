@@ -8,7 +8,6 @@ import java.util.concurrent.Semaphore;
 class ThreadClass extends Thread {
     Semaphore sem;
     String threadName;
-    private static volatile boolean flag = false;
     File myFile;
 
     public ThreadClass(Semaphore sem, String threadName, File myFile) throws IOException, JavaLayerException {
@@ -21,46 +20,47 @@ class ThreadClass extends Thread {
     //threads are automatically destroyed, when the run() method has completed
     @Override
     public void run() {
-        // Thread T1 processing
+        // Thread play processing
         if(this.getName().equals("play"))  {
             try {
-                    if (!flag) {
-                        System.out.println("Start: " + threadName);
-                        Data.player = new Player(Data.bufferedInputStream);
-                        System.out.println("Channel for thread playing: " + Data.fileInputStream.getChannel());
-                        flag = true;
-                        Data.totalLength = Data.fileInputStream.available();
-                        System.out.println("Total length: " + Data.totalLength);
-                        Data.isPlaying = true;
-                        Data.player.play();
-                        flag = false;
-                        Data.isPlaying = false;
-                    }
-            } catch (JavaLayerException | IOException e) {
+                sem.acquire();
+                Data.seconds = 0;
+                Data.minutes = 0;
+                System.out.println("Start thread: " + threadName);
+                Data.player = new Player(Data.bufferedInputStream);
+                Data.totalLength = Data.fileInputStream.available();
+                Data.isPlaying = true;
+                Data.player.play();
+                Data.isPlaying = false;
+            } catch (JavaLayerException | IOException | InterruptedException e) {
                 e.printStackTrace();
             }
+            System.out.println(threadName + "thread ended");
+            sem.release();
         }
-        // Thread T2 processing
+        // Thread resume processing
         else if (this.getName().equals("resume"))  {
             try{
-                if(!Data.isPlaying) {
-                    Data.player = new Player(Data.bufferedInputStream);
-                    Data.fileInputStream.skip(Data.totalLength - Data.pause);
-                    Data.isPlaying = true;
-                    Data.player.play();
-                    Data.isPlaying = false;
-                }
-                else{
-                    System.out.println("Song is already playing!");
-                }
-            } catch (JavaLayerException | IOException e){
+                sem.acquire();
+                System.out.println("Start thread: " + threadName);
+                Data.player = new Player(Data.bufferedInputStream);
+                Data.fileInputStream.skip(Data.totalLength - Data.pause);
+                Data.isPlaying = true;
+                Data.player.play();
+                Data.isPlaying = false;
+            } catch (JavaLayerException | IOException | InterruptedException e){
                 System.out.println(e);
             }
-            // Release the permit.
-            System.out.println(threadName + ":Released the permit.");
+            finally {
+                System.out.println(threadName + "thread ended");
+                sem.release();
+            }
         }
+        //Thread progress bar processing
         else if (this.getName().equals("progressBar")){
+            System.out.println("Start thread: " + threadName);
             try {
+                sem.acquire();
                 sleep(1000); // wait for play thread
             } catch (InterruptedException e) {
                 e.printStackTrace();
@@ -79,6 +79,7 @@ class ThreadClass extends Thread {
                 Data.timeLabel.setText(Data.minutes + " : " + Data.seconds);
                 Data.progressBar.setValue((int) ((Data.player.getPosition() / 1000)*100 / (Data.totalLength * 0.00006241)));
             }
+            sem.release();
         }
     }
 }
